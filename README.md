@@ -1,5 +1,7 @@
 # ML-evolution-modeling
-This repository is meant to showcase my Bachelor's Thesis _Machine Learning Modeling of the Microstructural Evolution of Strained Materials_. Machine Learning (ML) methods were employed to achieve first and foremost the extraction of a parameter characterizing the evolution of a system from a sequence of snapshots and here I present a synthesis of my work.
+This repository is meant to showcase my Bachelor's Thesis _Machine Learning Modeling of the Microstructural Evolution of Strained Materials_. Machine Learning (ML) methods were employed to achieve first and foremost the extraction of a parameter characterizing the evolution of a system from a sequence of snapshots and here I present a synthesis of my work. The relevant code I wrote, is included in the folder _Data analysis_ and is based on the **CRANE code**, which was developed my co-supervisor. It can be found [here](https://github.com/dlanzo/CRANE). 
+
+Every time that I refer to the "code", the "model" or similar appelatives I intend the models which are produced by the use of the CRANE code on a suitable dataset.
 
 ## Physics of Spinodal Decomposition
 A binary alloy at constant pressure and temperature may exhibit spontaneous phase separation through spinodal decomposition under a certain threshold temperature. This happens because the system tends to minimize Gibbs free energy, which is constituted by two terms: an entropic term, which favours the mixing and an enthalpic term, which may push towards separation, depending on the components of the system. When this happens some regions of space will be characterized by the prevalence of one of the two atomic species, whereas others by the lack thereof.
@@ -34,25 +36,24 @@ The strength of Machine Learning methods is their versatility and ability to enc
   </p>
 </p>
 
+## Quick summary of data analysis
+The file `makepath.py` is a simple script providing a .txt file which containes the patterns to the database on which the ML model was tested. The database is not present in this repository, but in its most used form it consisted of 1000 sequences of 44 frames with a resolution of 128x128. Every sequence was coupled with a numerical value, which was the true value of the eigenstrain parameter $$\eta$$.
+The sequences were split in different subsets for training and valiation. Most of the times 700 were used for training, 200 for validation and 100 were left out to constitute a test set to be used at a later stage of the analysis.
 
-<!--## Phase separation in binary alloys
-A binary alloy at constant pressure and temperature may exhibit spontaneous phase separation through spinodal decomposition under a certain threshold temperature. This happens because the system tends to minimize Gibbs free energy:
+The file `makepath256.py` does a similar thing to the previous one, but it includes the analysis of the performance of the model. For instance, one of the things it does is checking the values of the training and validation loss (which the model saves upon training) to see in which epoch of training the lowest loss was achieved and how many times the validation loss was higher than the training loss, as indicated in the following three print statements
+```python
+print("The validation loss was higher " + str(count) + "/" + str(tot) +" times")
+print("The validation loss has a minimum at epoch " + str(min_valid)+ ", value: " + str(valid[min_valid]))
+print("The training loss has a minimum at epoch " + str(min_train)+ ", value: " + str(train[min_train]))
+```
+Moreover, this files tests the model on hold out data, on which some operations can be applied, such as the dual transformation which changes the value of every pixel from $$x$$ to $$1-x$$, as each snapshot of each sequence is in grayscale and the system as a $$\mathbb{Z}_2$$ symmetry, which the model should learn upon training and reproduce on test data. This is implemented by the simple function:
+```python
+def apply_dual(feature):
+    return torch.ones_like(feature)-feature
+```
+This file in particular was made also to test sequences in which the snapshots were of a greater resolution of the original ones used upon training.
 
-$G^{\text{mixed}}=G^{\text{pure}}+\Delta H -T\Delta S$
+The file `autotest.py` repeats the similar analyses of the previous one but repeats the tests multiple times, each time changing the length of the sequence. If the sequences were 44 frames long this program tests the models by selecting the first time only 5 frames of the sequence, then 10, 15, all the way up to the maximum. This was meant as a possible generalization test, to see how well the model could perform while reducing the amount of test data that was fed to it. Results indicated a good performance often for sequences long just 15 or 10 frames.  
 
-which is constituted by two terms: an entropic term, which favours the mixing and an enthalpic term, which may push towards separation, depending on the components of the system. When this happens some regions of space will be characterized by the prevalence of one of the two atomic species, whereas others by the lack thereof.
-
-This system may be further analysed by the Cahn-Hilliard equation, which also includes the cost of the interface between the phases. It permits to treat the dynamics through the evolution of an order parameter, a convenient way to map the concentration fields into a single scalar field. The equation is the following:
-
-$\frac{\partial\varphi}{\partial t} =\nabla\cdot\left(M\nabla\left(\frac{\delta G}{\delta \varphi}\right)\right)$
-
-where the unknown $$\varphi$$ is a scalar field representing the local concentration: the more an atomic species prevails, the closer will $$\varphi$$ be to 1. It depends on the functional derivative of the free-energy functional $$G[\varphi]$$:
-
-$G[\varphi] = \int_{\Omega}[k|\nabla\varphi|^2+g_B(\varphi)+\rho(\varphi)]d^3x$
-
-where the first term represents the energy cost of having an interface with a certain shape, the second is the bulk energy of the mixture and the third is the elastic energy density, and it is nonzero when the system is subject to strain and stresses. This last term, for a simple volumetric compression is equal to:
-
-$$\rho(\varphi)=\frac{1}{2}C_{ijkl}(\varphi)(\varepsilon_{ij}-\varepsilon^0_{ij}(\varphi))(\varepsilon_{kl}-\varepsilon^0_{kl}(\varphi))$$
-
-where the eig
--->
+The file `test_class.py` is a module which modifies some classes of the CRANE code by using inheritance and adding them some additional data analysis features, like the possibility of priting some information about the numerical results of the inner layers (the "ConvGRUClassifierTEST" class). Another modified class is the "ConvGRUTEST" class, which inherits the properties of a model meant to predict the evolution of the system. In this setting the model was given some initial frames and the eigenstrain $$\eta$$ and its scope was to predict the evolution of the system for a given number of frames.
+These modified classes are tested in the files `test_script.py` and `test_script_evo.py` respectively.
